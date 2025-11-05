@@ -137,3 +137,306 @@ The last paragraph confused me a bit, so I looked at the pyfiglet source code fo
 They do not have a snapcraft.yaml file. There project is a installable python cli package. There is nothing special about it.
 
 ** Pack the snap
+We have what we need for a basic snap build. Let's see what happens when we pack the snap:
+
+~snapcraft pack~
+
+After a few seconds, the final result is:
+~Packed crazcalm-pyfiglet_0.1_amd64.snap~
+
+That means the snap completed successfully. You've already built your first snap!
+
+But we're not done with it or the ~pack~ command yet. You'll find that every time we iterate on the snap, we repack it.
+
+*** The command didn't work for me
+Running ~snapcraft pack~ failed with the error of:
+#+begin_quote
+Command standard error output: b"launch failed: KVM support is not enabled on this machine.\nPlease ensure the following:\n1. The system's CPU supports virtualization.\n2. Virtualization is enabled in the system BIOS.\n3. The KVM kernel modules are loaded.\n"
+Full execution log: '/home/crazcalm/.local/state/snapcraft/log/snapcraft-20251105-123830.964192.log'
+#+end_quote
+
+When I searched for solutions, I came across this [[https://forum.snapcraft.io/t/unable-to-build-a-snap-due-to-being-unable-to-enable-kvm/25988][forum thread]] that suggested to use lxd instead of multipass.
+
+Runnung ~snapcraft pack --use-lxd~ worked for me.
+
+** Inspect the result
+Let's take a look inside the snap to see what happened. At any point in crafting a snap, we can run an interactive shell inside the build container to inspect what Snapcraft has done with the files.
+
+There are many steps and actions the go into packing a snap, so for now let's focus on its final contents before it's compressed into a ~.snap~ file. Let's repack the file but halt Snapcraft before it finishes:
+
+#+begin_src bash
+  snapcraft pack --use-lxd --shell
+  cd ~/prime
+#+end_src
+
+Adding ~--shell~ popped us into an interactive shell inside the build container. In here, we can look around, and even touch files, like we were putting the snap together by hand.
+
+The ~prime~ directory contains the state of the final files before they're packed. If we take a look at what's inside, we'll see:
+
+#+begin_src text
+❯ snapcraft pack --use-lxd --shell
+Launching shell on build environment...
+snapcraft-crazcalm-pyfiglet-amd64-110129014 ../project# apt install tree
+snapcraft-crazcalm-pyfiglet-amd64-110129014 ../project# cd ~/prime/
+snapcraft-crazcalm-pyfiglet-amd64-110129014 ../prime# tree
+.
+├── bin
+│   ├── Activate.ps1
+│   ├── activate
+│   ├── activate.csh
+│   ├── activate.fish
+│   ├── pip
+│   ├── pip3
+│   ├── pip3.12
+│   ├── pyfiglet
+│   ├── python -> python3
+│   ├── python3 -> /usr/bin/python3.12
+│   ├── python3.12 -> python3
+│   └── wheel
+├── include
+│   └── python3.12
+├── lib
+│   └── python3.12
+│       └── site-packages
+│           ├── <many packages -- I cut this from the output>
+├── lib64 -> lib
+├── meta
+│   ├── gui
+│   └── snap.yaml
+└── pyvenv.cfg
+
+277 directories, 1908 files
+snapcraft-crazcalm-pyfiglet-amd64-110129014 ../prime# exit
+exit
+#+end_src
+
+From a Python project, there's nothing in here that's our of the ordinary. We see the constituent pieces, comprising the binary executables for the command itself, the dependency packages, and some utility files from the build and from Snapcraft. This is the state of the project as it we had built it ourselves with the standard python tooling.
+
+If we were runnung unto any file pathing problems with the snap, the interactive shell would be the the ideal way to investigate.
+
+Everything looks good, so let's exist the build container:
+~exit~
+
+** Define the app
+If we were to install the snap we just built, it wouldn't do anything. That's because we need to define the snap's apps -- its programs that run as processes and services on the host.
+
+In the project file, the ~apps~ key decides all of the snap's apps. Pyfiglet has one main program -- the ~/bin/pyfiglet~ file we saw earlier.
+
+Add the following after the ~parts~ section:
+#+begin_src yaml
+apps:
+  crazcalm-pyfiglet:
+    command: bin/pyfiglet
+#+end_src
+
+As this is the /main/ app -- in other words, the command we want to run when the user calls the snap by name -- it should match the snap name.
+
+The core of an app entry is its ~command~ key, which is the shell command that the snap calls on the host. It's a path to an executable inside the snap, and can contain arguments. It isn't strictly tied to any binary built by the snap. It could instead be, for example, a combination of POSIX-compatible commands.
+
+** Test th snap
+Let's repack the snap and try running it. First, run ~snapcraft pack --use-lxd~ again.
+
+Then, install the snap locally:
+~snap install crazcalm-pyfiglet_0.1_amd64.snap --devmode --dangerous~
+
+Normally, snapd prevents us form installing snaps that aren't vetted or confined. But, if we tell it we're comfortable with installing a snap with full system access and that doesn't declare itself as stable -- a potentially dangerous decision -- it will install. While we're crafting and especially debugging snaps, it's easiest to install them with these flags.
+
+At long last, let's try running our snap.
+
+~crazcalm-pyfiglet Hello Marcus!~
+
+You should see the successful result:
+#+begin_src text
+ _   _      _           __  __                          _ 
+| | | | ___| | | ___   |  \/  | __ _ _ __ ___ _   _ ___| |
+| |_| |/ _ \ | |/ _ \  | |\/| |/ _` | '__/ __| | | / __| |
+|  _  |  __/ | | (_) | | |  | | (_| | | | (__| |_| \__ \_|
+|_| |_|\___|_|_|\___/  |_|  |_|\__,_|_|  \___|\__,_|___(_)
+#+end_src
+
+Pyfiglet can draw with different typeface styles, too. It's a fun little command.
+
+#+begin_src text
+crazcalm-pyfiglet -f smscript Hello Marcus!
+ ,                     ,_ _                            
+/|  |  _ |\ |\  _     /| | |   _,   ,_   _         ,  |
+ |--| |/ |/ |/ / \_    | | |  / |  /  | /   |  |  / \_|
+ |  |)|_/|_/|_/\_/     | | |_/\/|_/   |/\__/ \/|_/ \/ o
+                                                       
+#+end_src
+
+** Clean the build container
+Before we continue, we should perform some pre-emptive housekeeping.
+
+As we progress through a build, the contents of the build container can become dirty, and eventually cause conflicts or break the build. It's a good idea to periodically flush the container for the next build:
+~snapcraft clean~
+
+** Override the main part's build
+If you inspect the source files in the pyfiglet source code, you'll notice that the font files are split into two directories, with the second directory containing all fonts with unaccounted licenses. The project has a separate Make recipe for combinint these two directories. We committed to the project's Python build, so we can't access this second set of fonts. Since we're making this snap for personal testing purposes, let's see if we can preserve all the fonts in the snap.
+
+If we poke around further in the source code, it becomes clear that to copy all the unacounted font files we must copy them into the build's ~fonts~ directory. This means we'll need to intrude on the regular build process of the ~pyfiglet~ part.
+
+Think back to when we entered the build container. While inside, we could have created, copied, or moved any files as we saw fit. With a build override, we can make manual adjustments of that sort to build, but through the project file.
+
+Add the following ~override-build~ key to the ~pyfiglet~ part:
+#+begin_src yaml
+parts:
+  pyfiglet:
+    plugin: python
+    source-type: git
+    source: https://github.com/snapcraft-docs/pyfiglet
+    override-build: |
+      mkdir pyfiglet/fonts
+      cp pyfiglet/fonts-contrib/* pyfiglet/fonts
+      cp pyfiglet/fonts-standard/* pyfiglet/fonts
+      craftctl default
+#+end_src
+
+The key does what its name suggest. It replaces the regular build step of the part;s lifecycle, running whatever shell commands we provide to special effect. In this case, the build pre-empts the project's ~setup.py~ script by creating the font directory and coping both font sets into it at the same time. Then, byt concluding with ~craftctl default~, we instruct the part to proceed with the build step like normal, in our snap's case by running ~setup.py~ and autotools.
+
+As a result, all the fonts are now copied into the snap. Let's give it a try. Repack the snap, reinstall iot, and then try it with one of the new fonts:
+
+#+begin_src text
+crazcalm-pyfiglet -f thin Hello Marcus!
+                                                            
+|   |     |    |             ,-.-.                         |
+|---|,---.|    |    ,---.    | | |,---.,---.,---..   .,---.|
+|   ||---'|    |    |   |    | | |,---||    |    |   |`---. 
+`   '`---'`---'`---'`---'    ` ' '`---^`    `---'`---'`---'o
+                                                            
+#+end_src
+
+** Connect the interfaces
+Pyfiglet adds some new functionality to FiGlet, such as a feature for installing new fonts to the user's =~/.local/share/pyfiglet/fonts= directory. But, by default, snaps block access to system resources like USB devices, the network, and home. /Interfaces/ permit access to individual resources on the host, be they software, data or hardware.
+
+To enable writing to the home directory, we must connect two interfaces:
+
+- The home interface, which provides base access to the home folder
+- The personal-files interface, which provide access to hidden files in the home folder
+
+Interfaces are established on apps in your snap by ~plug~ key.
+
+First, let's connect our ~crazcalm-pyfiglet~ app to the home interface:
+
+#+begin_src yaml
+apps:
+  crazcalm-pyfiglet:
+    command: bin/pyfiglet
+    plugs:
+      - home
+#+end_src
+
+Next, the personal-files interface. For better confinement, personal-files can only target specific directories for reading and writing, so we must be explicit and configure which paths to link. Configurable interfaces must be declared at the root of the project file, with custom aliases. The alias must be something that users and admins can intuit. For personal-files, the convention is to start with ~dot-~ and follow with a short description of our intent.
+
+With all of that in mind, let's create an entry for personal-files after our apps, granting it write access to =~/.local/share/pyfiglet/fonts=:
+
+#+begin_src yaml
+plugs:
+  dot-pyfiglet-fonts:
+    interface: personal-files
+    write:
+      - $HOME/.local/share/pyfiglet/fonts
+#+end_src
+
+Then, add it to the plugs of the ~crazcalm-pyfiglet~ app:
+
+#+begin_src yaml
+apps:
+  crazcalm-pyfiglet:
+    command: bin/pyfiglet
+    plugs:
+      - home
+      - dot-pyfiglet-fonts
+#+end_src
+
+If we repack and reinstall the snap, we can install a new font for pyfiglet to use. However, before we repack, let's go back to two keys we skipped at the beginning.
+
+** Securing the snap
+Now that we're handling interfaces -- usually the last step in the crafting process -- the ~grade~ and the ~confinement~ keys are relevant.
+
+These keys account for the security and stability of the snap. The ~grade~ key is a self-attestation of how risky the snap is. When set to ~devel~, snapd and snap stores won't treat it as ready for production. The ~confinement~ key determines whether the snap needs less confinement to function, where it has fewer guardrails and greater access to the system.
+
+We want our snap to be as safe and secure as possible, so let's change these values to:
+
+#+begin_src yaml
+grade: stable
+confinement: strict
+#+end_src
+
+Now, when we build the snap, the snap's access to the host is inverted -- all sensitive system resources are blocked unless facilitated by an interface. And when we publish the snap, users will be able to install it without the ~--devmode~ flag.
+
+** Test the Interfaces
+Noe that the snap is confined, we can test the interfaces realistically.
+
+Build and reinstall the snap, but this time, install it like a production-ready snap:
+
+~snap install crazcalm-pyfiglet_0.1_amd64.snap --dangerous~
+
+*Note*:
+We must continue passing the ~--dangerous~ argument during installation because it's not live in the Snap Store, and therefore not attestable.
+
+Next, let's gather a font that wasn't included with pyfiglet and install it.
+
+Download [[https://github.com/xero/figlet-fonts/blob/master/smbraille.tlf][Small Braille]] from the figlet-fonts project and install it with:
+
+~crazcalm-pyfiglet -L smbraille.tlf~
+
+And give it a try:
+#+begin_src text
+crazcalm-pyfiglet -f smbraille Hello Marcus!
+ ⣇⣸ ⢀⡀ ⡇ ⡇ ⢀⡀   ⡷⢾ ⢀⣀ ⡀⣀ ⢀⣀ ⡀⢀ ⢀⣀ ⡇
+ ⠇⠸ ⠣⠭ ⠣ ⠣ ⠣⠜   ⠇⠸ ⠣⠼ ⠏  ⠣⠤ ⠣⠼ ⠭⠕ ⠅
+#+end_src
+
+** Review the project
+Here's the complete code for the ukuzama-pyfiglet project. Yours should be similar to it.
+
+#+begin_src yaml
+name: ukuzama-pyfiglet
+base: core24
+version: "0.1"
+summary: pyfiglet is a program for making large letters out of ordinary text
+description: |
+  pyfiglet is a full port of FIGlet (http://www.figlet.org/) into pure python.
+  It takes ASCII text and renders it in ASCII art fonts (like the title above,
+  which is the 'block' font).
+
+  This snap is not endorsed by the pyfiglet project.
+
+platforms:
+  amd64:
+
+grade: stable
+confinement: strict
+
+parts:
+  pyfiglet:
+    plugin: python
+    source-type: git
+    source: https://github.com/snapcraft-docs/pyfiglet
+    override-build: |
+      mkdir pyfiglet/fonts
+      cp pyfiglet/fonts-contrib/* pyfiglet/fonts
+      cp pyfiglet/fonts-standard/* pyfiglet/fonts
+      craftctl default
+
+apps:
+  ukuzama-pyfiglet:
+    command: bin/pyfiglet
+    plugs:
+      - home
+      - dot-pyfiglet-fonts
+
+plugs:
+  dot-pyfiglet-fonts:
+    interface: personal-files
+    write:
+      - $HOME/.local/share/pyfiglet/fonts
+#+end_src
+
+** Conclusion and next steps
+And you're done! You have a snap of pyfiglet that works on your system.
+
+It would be a good time to start planning your first publis snap. Ask yourself, what software would be interesting to package? What apps would benefit the most from the security and ease of a snap? Any reason or justification is valid. Snaps can be tools, productivity software, games or any traditional Linux package.
+
+When you're ready to begin crafting in earnest, you should [[https://documentation.ubuntu.com/snapcraft/stable/how-to/publishing/register-a-snap/#how-to-register-a-snap][create an account and then register your snap]].
