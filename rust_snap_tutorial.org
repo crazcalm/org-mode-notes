@@ -1,0 +1,79 @@
+* Snapcraft.io Rust Tutorial
+My goal is to learn how to create Rust snap packages.
+
+** Why are snaps good for Rust Projects?
+*** Easy to discover and install by millions using the Snap Store or command-line every day.
+If I create anything that I think others would like, I should snap it.
+
+*** Automatically updated to the latest stable version of your app.
+This is a nice feature, but I am curious as to how careful you have to be with forward migrations.
+To avoid having to learn about that immediately, I should work on project that do not maintain state or, if they do maintain state, is should be stored in a file that takes everything as regular input so the adaptor pattern can be used to make the translation between format/payload versions easy.
+
+*** Revert to the Previous version if an update fails, preserving data.
+This seems pretty generic. Yanking from crates.io pretty much does the same thing. On a side note, I need to go through those docs too. hahaha
+
+In an attempt to hold myself accountable, I created an a file to writting notes on Cargo Guide.
+
+** Continue
+You can distribute your apps across Linux using a musl-enabled version of Rust, with all the dependencies satisfied. However, end user discovery and update management remain a challenge. Snaps fill this gap, letting you distribute a Rust app in an app store experience for end users
+
+*** What is "musl-enabled verison of Rust" mean?
+
+I did a quick search and came across a [[https://dev.to/abhishekpareek/build-statically-linked-rust-binary-with-musl-and-avoid-a-common-pitfall-ahc][DEV article]] that covered it in their intro.
+
+#+BEGIN_QUOTE
+I was required to produce a x86-64 statically linked Rust binary for a containerized workload at work. This guide briefly outlines the process of doing so using musl, a lightweight C library. Unlike traditional compilation with glibc, musl eliminates dynamic dependencies, resulting in a single, external dependency-free executable.
+#+END_QUOTE
+
+** Continue
+In just a few steps, you'll have an example Rust app in the Snap Store.
+
+Here is the [[https://github.com/snapcraft-docs/xsv][XSV]] defines snapcraft.yaml
+#+BEGIN_SRC text
+  name: text-xsv
+  verison: git
+  summary: A fast CSV command line toolkit written in Rust
+  description: |
+    xsv is a command line program for indexing [..]
+
+  base: core18
+  confinement: devmode
+
+  parts:
+    test-xsv:
+      plugin: rust
+      source: .
+
+  apps:
+    test-xsv:
+      command: bin/xsv
+#+END_SRC
+
+The Rust plarts are built with the [[https://documentation.ubuntu.com/snapcraft/stable/common/craft-parts/reference/plugins/rust_plugin/#craft-parts-rust-plugin][Rust plugin]].
+
+This project file bundles the current stable release of Rust in the snap using Rustup. Dependencies from the project's ~Cargo.toml~ are also bundled.
+
+To declare a Rust part:
+
+1. Declare the general parts keys, such as ~source~, ~override-build~, ~build-packages~, and so on.
+
+2. Set ~plugin: rust~
+
+3. If the snap uses core18, you can override the Rust toolchain version with the ~rust-revision~ list key.
+
+*** Thoughts
+This document does not tell me anything about the commands needed to create the snap... Let me find that.
+
+I have been looking around and I think the example docs I read are really old because it uses core18, and this page ([[https://documentation.ubuntu.com/snapcraft/stable/how-to/select-a-build-provider/][https://documentation.ubuntu.com/snapcraft/stable/how-to/select-a-build-provider/]]) is talking about core20 and core22. I am starting to think the cores relate to ubuntu versions.
+
+Yep! This page ([[https://documentation.ubuntu.com/snapcraft/stable/how-to/crafting/specify-a-base/][https://documentation.ubuntu.com/snapcraft/stable/how-to/crafting/specify-a-base/]]) confirms it. It references core24 and lists core18 under deprecated bases.
+
+I found the [[https://documentation.ubuntu.com/snapcraft/stable/how-to/crafting/specify-a-base/][publishing documentation]]. It goes over account stuff like registering a snap, publishing it, install it and metrics and stuff, but it does not go over building the snap locally to test it.
+
+I found it!!! [[https://documentation.ubuntu.com/snapcraft/stable/tutorials/craft-a-snap/][https://documentation.ubuntu.com/snapcraft/stable/tutorials/craft-a-snap/]]
+
+The docs look up to date, the build a python app and they go through all the steps I was looking for. That said, the docs are long enough that they should definitely be a new org document...
+
+I think this is a good time to figure out how org more file linking orks.
+
+[[file:snapcraft_building_a_snap.org][Building a Snap Notes]]

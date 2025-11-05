@@ -1,0 +1,86 @@
+* Emacs Notes:
+I am trying to become better at using emacs and I want a place to gather my accumulated knowledge.
+
+** General commands:
+*** Word wrap
+`M-x visual-line-mode` is a soft wrap. Displays text wrapped visually at the widows's edge withoug modifying the content.
+
+To enable is globally:
+`(global-visual-line-mode 1)`
+
+Note: I can also run `M-x global-visual-line-mode`
+
+
+** Org mode
+*** Inserting links
+Links can be creaed using the format =[[url][description]]=, allowing you to connect to files, headings, or other resources. You can insert a link by using C-c C-l, which prompts you to enter the link details (If you have selected text, it will automatically use that as the description).
+
+**** Types of links
+| link type              | example                     | description                                 |
+|------------------------+-----------------------------+---------------------------------------------|
+| external url           | hhtp://example.com          | links to webpage                            |
+| Local file             | file:~/documents/report.pdf | links to a file on your file system         |
+| Internal Org Reference | <<#my-header>> (<> == [])   | Links to a heading within the same org file |
+| email                  | mailto:example@example.com  | links to an email address                   |
+| Usenet                 | news:comp.emacs             | Links to a usenet group                     |
+
+***** Editing links
+Place the cursor on the link and press C-c C-l. This allows you to modify the URL and description.
+
+**** Open a link
+~C-c C-o~ (open-link-at-point)
+*** Tables
+
+To create a table in Org mode, you can use the following methods:
+**** Direct typing
+State a line with `|` character. For example:
+
+#+begin_src text
+  | Name | Age |
+  |------|-----|
+  | John | 30  |
+#+end_src
+
+**** Using a Command
+Press `C-c |` to create a table form a selected region or to start a new table. You will be prompted for the table's structure, such as the number of rows and columns.
+
+**** Editing the Table
+Once your table is created, you can easilty edit it:
+***** Naviagating Cells
+Use ~TAB~ to move to the next cell and ~S-TAB~ to move to the previous cell.
+***** Adding Rows/Columns
+- To insert a new row, press ~M-S-Down~ to add a row below or ~M-S-UP~ to add one above.
+***** Re-aligning the Table
+Press ~C-c C-c~ to re-align the table after making changes.
+
+*** Adding raw text to the document
+You can create a code block for text using the following structure
+
+#+BEGIN_SRC text
+text [[url][description]]
+#+END_SRC
+
+This allows you to include and format text within a code block.
+
+*** Quote blocks
+
+Syntax for quotes blocks
+
+#+BEGIN_QUOTE
+Your quoted text goes here.
+#+END_QUOTE
+
+*** Text highlighting
+**** Basic Highlighting Features
+Org mode allows users to highlight test using various markup styles. You can emphasize text by surrounging it with specific characters:
+
+| Type          | text     | example |
+|---------------+----------+---------|
+| Verbatim      | =text=   | =text=  |
+| Bold          | =*text*= | *text*  |
+| Underline     | =_text_= | _text_  |
+| Strikethrough | =+text+= | +text+  |
+| Code          | =~text~= | ~text~  |
+| Italic        | =/text/= | /text/  |
+
+

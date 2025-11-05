@@ -1,0 +1,6 @@
+* Cargo Guide
+I am pretty familiar with Cargo, but it has been a bit since I looked over the documentation. I am sure things have changed and I would like to make sure i am up to date with how things are done now.
+
+Website: https://doc.rust-lang.org/cargo/guide/
+
+
