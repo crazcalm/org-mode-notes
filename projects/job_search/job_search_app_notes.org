@@ -1,0 +1,62 @@
+* Job Search App
+
+Every time I begin my job search, I go back to the [[https://github.com/crazcalm/job-search/tree/master][job search program]] that I wrote ten years ago. I love the program and the fact that it has its own installer is crazy, but I think it is time to try to re-write it, and I want to try to write it in Rust.
+
+** Thoughts on original version
+
+That program is, more or less, a database wrapper. It is filled with data models and I have various ways of performing CRUD operations on them. Outside of that, I do recall that some of the database relations are inaccurate. I do not remember the specifics, but I think there was awkwardness around recuiters and their relation to some of the other objects.
+
+** Thoughts on new version
+
+*** Crud operation
+I do not want to have to write a ton of boiler plate code. Serde and data models is fine and all, but I do not want to write a special model for each object that has its own set of crud methods. That sounds like a waste of my time. If I cannot figure this part out, then I should do the rewrite in python.
+
+**** How do I want to do this?
+What am I actually asking myself to do?
+
+***** Populate objects from the database
+Populating the objects from the database is not much of a chore because it is the same as initializing a new object.
+
+***** Create DB entries from the UI
+I assume there is a form, or someting like it, that gathers all the needed information. The question I have here is whether or not this info goes straight into the database or if an object is created from it and then that data is saved to the database via the object?
+
+The python way of doing this is to go to the object first and then the database, but, in order to do that, I would need a getter and setter for each property, right? I don't want to write all that.
+
+Is there a way for me to update objects and then save them without doing a ton of work? I think I am over thinking this a bit. So, I do not have to write getters because the struct dot notation will handle that. The issue that I am trying to solve is for the setters.
+
+I do not have to write a setter for every property. So I need an update method that takes a paylaod and then I have to use that payload to set all the fields that need updating? I believe I can update all property within the mutuable metod. What I would need then is a data type I can pass into this method that can:
+
+1. Hold all the data needed for the upate (hopefully be the correct types)
+2. possibly create a single mapping that I can use between the objects properties and this data that can be use to handle the setting of the stuff.
+
+I am starting to recall actual reasons as to why this might be hard...
+
+If I use a struct with types, then they object I pass in has to be able to hold all the types used in the properies of this struct, which is insane.
+
+One thought is to make all the properies Options. Then I can create new objects with partal data and each object can update against something of its own type. This would work, but it would mean every property is an options. Am I okay with that?
+
+I think i have to be okay with it because I cannot think of another way doing this that seems reasonable.
+
+***** update objects? 
+
+*** Migrations
+I would like to use a database migration tool. I think I looked into this once before, but I do not remember the name of the one I liked.
+
+It took me way too long to find [[https://github.com/rust-db/refinery][refinery]] again. Anwyay, sql based migratons is what I want to use this for.
+
+*** Interfaces 
+Ideally, I would like both a GUI and TUI interface, but I think I will start with which ever one is easier. As of right now, I do not know which one would be easier to write. With reference to frameworks, the ones  have in mide are [[https://github.com/fltk-rs/fltk-rs][FLTK]], [[https://github.com/gyscos/cursive][Cursive]], and [[https://github.com/ratatui/ratatui][Ratatui]] (thier docs mention a TUI called [[https://github.com/ccbrown/iocraft][iocraft]] that might be an option as well).
+
+Looking at that list, it seems like I should start off with the GUI interface because I only have one option for it (FLTK).
+
+*** Database
+
+sqlite is always my go to ([[https://github.com/rusqlite/rusqlite][rusqlite]]).
+
+** Thought on implementaton
+*** Database
+It seems like I will use refinery to create all the database migrations. The migrations will be writing in sqlite sql. The connection crate will be rusqlite.
+
+*** Stucts/objects
+
+
