@@ -1,0 +1,13 @@
+* Refinery video
+My goal is do something quick, fast and easy to get me back into the swing of things.
+
+** Overview
+Thinks I want to cover:
+- What is refinery?
+- Basic project setup (install, config creation, migrations via sqlite)
+- Create an empty database via sqlite cli
+- Run migrations
+
+** Tone
+I have a lot more writing experience now, so I think I can craft my dialogue in such a way as fun, likable and technical in that order.
+The order is important because being "Technical" is not enough. I need people to want to watch me. I need people to want to continue the video. I need to keep in mind that I am selling myself in these videos and my technical ability is only a small part of who I am.

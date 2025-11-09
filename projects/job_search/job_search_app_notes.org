@@ -44,10 +44,44 @@ I would like to use a database migration tool. I think I looked into this once b
 
 It took me way too long to find [[https://github.com/rust-db/refinery][refinery]] again. Anwyay, sql based migratons is what I want to use this for.
 
+**** Refinery features
+Refinery depends on rusqlite, so I have to decide on those features first.
+
+- rusqlite-bundled (I am guessing this is the right one)
+- toml (They use it for setting up config files)
+  
++-I also need the cli app ([[https://github.com/rust-db/refinery/tree/main/refinery_cli][refinery-cli]]):+
++- sqlite-bundled+
+
+The refinery-cli is a `cargo install` and not a `cargo add`.
+
+**** Rusqlite features
+- bundled (give me their sqlite version)
+- Chrono (for data/time/timestamps)
+- url (I am not sure how this works, but why not).
+
+
+**** Migration config?
+The docs have a `refinery setup` command. Lets see what that does.
+
+It created a `refinery.toml` file for me.
+#+begin_src toml
+[main]
+db_type = "Sqlite"
+db_path = "~/.config/rust-job-search/db.sqlite3"
+use_tls = false
+trust_cert = false
+#+end_src 
+
+
 *** Interfaces 
 Ideally, I would like both a GUI and TUI interface, but I think I will start with which ever one is easier. As of right now, I do not know which one would be easier to write. With reference to frameworks, the ones  have in mide are [[https://github.com/fltk-rs/fltk-rs][FLTK]], [[https://github.com/gyscos/cursive][Cursive]], and [[https://github.com/ratatui/ratatui][Ratatui]] (thier docs mention a TUI called [[https://github.com/ccbrown/iocraft][iocraft]] that might be an option as well).
 
 Looking at that list, it seems like I should start off with the GUI interface because I only have one option for it (FLTK).
+
+I just watched the [[https://www.youtube.com/watch?v=0ZrD2oYabn4&list=WL&index=1&t=9s][Are we Desktop yet?]] from Euro Rust 2025 and they made a very good case for using [[https://github.com/iced-rs/iced][Iced]].
+
+I have had some time to look into it, and Iced is definitely the option I should use for a Rust GUI.
 
 *** Database
 

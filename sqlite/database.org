@@ -1,0 +1,35 @@
+* Sqlite3 notes
+
+** Creating an empty sqlite file via the cli
+I found the instructions on this [[https://stackoverflow.com/questions/20155693/how-to-create-an-empty-sqlite-db-with-command][thread]].
+
+~sqlite3 file.db "VACUUM;"~
+
+** Bulk insert syntax not the same as other databases?
+
+It is explained in the [[https://stackoverflow.com/questions/1609637/how-to-insert-multiple-rows-in-sqlite][thread]], but the high level summary is that I should do something like the following instead:
+
+#+begin_src sql
+BEGIN TRANSACTION;
+INSERT INTO 'tablename' table VALUES ('data1', 'data2');
+INSERT INTO 'tablename' table VALUES ('data3', 'data4');
+...
+COMMIT;
+#+end_src
+
+** CLI
+*** Settings I should turn on
+#+began_src text
+.changes on
+.enho on
+.headers on
+#+end_src
+
+*** Show tables
+~.tables~
+
+*** Show schema
+~.schema <table name>~
+
+*** Show current settings
+~.show~
