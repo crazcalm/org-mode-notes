@@ -93,4 +93,20 @@ It seems like I will use refinery to create all the database migrations. The mig
 
 *** Stucts/objects
 
+I have gotten over my issue with being verbose. The new plan is that I will create a setter method for each property. This will work for me because almost every property is an ~Option~, which means the ~Default~ instance (I derived a Default implementation) of the structs is having all the properties default to `None`.
 
+So, the idea is:
+- I will be able to get and object from the database to populate the UI fields.
+- The UI fields will control their own manipulation of stuff.
+- Saving the data in the UI will work as follows:
+    - We will create a default instance of the struct with all Nones for fields.
+    - We will update this default instance with the data pulled from the UI
+    - If this is a new database entry, we call the /create_entry/ method on the struct.
+    - If it is an existing database entry, we get a new struct with the all the current database information. We call an update method where we pass in the struct with the UI information. This method will use the UI struct info to update the struct with the database information. Then we will call /update_entry/ on that struct to update the database entry.
+
+ All in all, this plan requires that I:
+ - Create setter methods for all properties
+ - Create an /create_entry/ method
+ - Create a /update_entry/ method
+
+ I will use the Company sruct as the prototype. Once I prove it out the approach, I will port it to the rest of the structs.

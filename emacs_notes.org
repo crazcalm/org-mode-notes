@@ -84,3 +84,6 @@ Org mode allows users to highlight test using various markup styles. You can emp
 | Italic        | =/text/= | /text/  |
 
 
+** Dired
+*** Sort columns
+If you move the cursor to the column, pressing ~S~ will sort the column alphabetically, which makes files much easier to find.
