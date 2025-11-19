@@ -87,3 +87,9 @@ Org mode allows users to highlight test using various markup styles. You can emp
 ** Dired
 *** Sort columns
 If you move the cursor to the column, pressing ~S~ will sort the column alphabetically, which makes files much easier to find.
+
+** Errors
+*** Eager macro expansion errors
+I spent all day looking into this because it was preventing me from using rust-mode on windows and I think the only "fix" that actual helped was deleting all .emacs.d directory. This forced all the packages to be installed again.
+
+I am guessing that the issue was that one of the packages was old and causing issues when mixed with the other packages.

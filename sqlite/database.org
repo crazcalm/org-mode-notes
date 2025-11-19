@@ -19,7 +19,7 @@ COMMIT;
 
 ** CLI
 *** Settings I should turn on
-#+began_src text
+#+begin_src text
 .changes on
 .enho on
 .headers on
