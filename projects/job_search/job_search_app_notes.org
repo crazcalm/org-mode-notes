@@ -110,3 +110,38 @@ So, the idea is:
  - Create a /update_entry/ method
 
  I will use the Company sruct as the prototype. Once I prove it out the approach, I will port it to the rest of the structs.
+
+** Updates (MVP -V2)
+Now that I have a basic skeleton on the application, I want to update the database schema to be more useful and less bloated.
+
+I want 5 tables:
+- Company
+ - Contacts
+ - Job Postings
+ - Interviews
+- Notes
+
+  I don't think Company has to change right now, but I want to update Contacts to have boolean flags for:
+  - recruiter
+  - interviewer
+  - other
+
+  Notes should be updated to have foriegn key reference to Company, Contacts, of Job Posting.
+
+  I hope this is all the information I need.
+
+*** Questions
+**** Migrations
+I am early enough in the project that droping the tables and starting from scratch is doable, but I am curious as to what I have to properly alter the tables to do what I want them to.
+
+***** Steps:
+I need a migration to get rid of the tables and fields that I no longer want/need.
+
+Looks like I am only dropping the recruiters table. This means that I need to drop the recruiter_id field from all the other tables.
+
+Nope:
+I can't use the alter table command to reach the table state I want because I cannot drop table columns that have a foreign key reference. I think that when I create the tables again, I will not use foreign key references at all. For sqlite, I think this will make alteration easier in the future.
+
+**** Migrations V2
+I dropped all foreign key references, dropped recruiters table, updated notes, job_posting and interview tables. I made a mistake and missed the recruiters field in on of the tables and was able to write a migration to alter the table and drop the column because it did not have a foreign key reference associated with it. That felt good.
+

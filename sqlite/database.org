@@ -21,7 +21,7 @@ COMMIT;
 *** Settings I should turn on
 #+begin_src text
 .changes on
-.enho on
+.echo on
 .headers on
 #+end_src
 
@@ -33,3 +33,6 @@ COMMIT;
 
 *** Show current settings
 ~.show~
+
+** Alter Table
+Sqlite does not have all the capabilities of other databases. For Altering tables, there are a number of reasons why you cannot drop a column ([[https://sqlite.org/lang_altertable.html][docs]]). More or less, I cannot drop columns if they have a foreign key reference.
