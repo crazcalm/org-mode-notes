@@ -1,0 +1,10 @@
+* Ice version 13 something
+
+** Things I cannot do:
+*** Tab to next element
+It is a missing feature that was pointed out in 2020 ([[https://github.com/iced-rs/iced/issues/489][github issue link]]). The post explains that most common keyboard interactions that control widget stuff does not exist.
+
+Hold up. The modal example has tabing between fields! Version 13 and 14 do it differently, but the core of it is the same. They subscribe the to all events, listen to for the keybaord tab event, then call focus_next and focus_previous method calls.
+
+[[https://github.com/iced-rs/iced/blob/0.13/examples/modal/src/main.rs#L71][v13 example Link]]
+
