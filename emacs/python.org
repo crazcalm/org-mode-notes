@@ -1,0 +1,78 @@
+* Emacs Python Setup Notes:
+** Elgot and Pyright
+pyright is used for the LSP stuff. You need to have it installed in your default python environment.
+
+*** Ensuring that your Virtual Environment are used
+The server will be running from your default python installation, but to make sure that the server is aware of you virtual environments, you must add a =*pyrightconfig.json*= file to the root of your project. This config file will tell pyright where to find your virtual environment.
+
+**** Example config
+***** Linux version:
+#+BEGIN_QUOTE json
+ {
+     "venvPath": "/home/crazcalm/Documents/Github/Backstage",
+      "venv": "ENV"
+ }
+#+END_QUOTE
+
+***** Windows Version:
+Note that the Window's version has to escape the backslashes.
+#+BEGIN_QUOTE json
+{
+    "venvPath": "\\Users\\crazcalm\\Documents\\Github\\Backstage",
+    "venv": "ENV"
+}
+#+END_QUOTE
+
+** Emacs config code
+This is the bulk of the configuration minus the installing of the packages (cape, corfu).
+
+#+BEGIN_QUOTE
+;; eglot with corfu (UI layer)
+(use-package corfu
+  :ensure t
+  :init
+  (global-corfu-mode)
+  :custom
+  (corfu-auto t)
+  (corfu-cycle t)
+  (corfu-preview-current nil))
+
+(use-package cape
+  :ensure t)
+
+(defun my-capf-setup ()
+  (setq-local completion-at-point-functions
+              (list
+               (cape-capf-super
+                #'eglot-completion-at-point
+                #'cape-file
+                #'cape-dabbrev))))
+
+(add-hook 'eglot-managed-mode-hook #'my-capf-setup)
+
+;; python set up
+(add-hook 'python-mode-hook 'eglot-ensure)
+#+END_QUOTE
+
+*** Corfu
+Is the UI component that I am using with Eglot. It is newer that =/company/= and should be prefered.
+
+*** Cape
+From what  I am told, this gives me better code completion
+
+** Usage
+*** See Docs
+If I move my cursor on to a method. A mini buffer will show at the bottom of the screen with some documentation in it. In order to open a buffer and see all of the docs, you must run =~M-x eldoc-doc-buffer~=
+
+*** Terminal
+**** Code Completion
+In the terminal version of Emacs, I have to type the variable name, add the "dot" and then run the command =/completion-at-point/=
+in order to see the code completion options.
+
+***** Example
+#+BEGIN_QUOTE python
+import os
+os.
+#+END_QUOTE
+
+At this point, I will =~M-x completion-at-point~=. This will open a new buffer where I can scroll through my optons

@@ -1,0 +1,232 @@
+* Textual
+[[https://textual.textualize.io/][Textual]], according to their website, is a =/Rapid Application Development/= framework for Python. Build sophisticated user interfaces with a simple Python API. Run you apps in the terminal or a web browser.
+
+Note: I'm looking at this for the terminal aspect. I was completely unaware that these apps could also be ran in the brower.
+
+** Tutorial: Stopwatch Application
+We're going to build a stopwatch application. This application should show a list of stopwatches with buttons to start, stop and reset the stopwatches. We also want the user to be able to add and remove stopwatches as required.
+
+*** App Class
+The first step in building a Textual app is to import and extend the App class. Here's a basic app class we will use as a starting point for the stopwatch app.
+
+#+BEGIN_SRC python
+   from textual.app import App, ComposeResult
+   from textual.widgets import Footer, Header
+
+   class StopwatchApp(App):
+       """A Textual app to manage stopwatches."""
+       BINDINGS = [("d", "toggle_dark", "Toggle dark mode")]
+
+       def compose(self) -> ComposeResult:
+           """Create children widgets for the app."""
+           yield Header()
+           yield Footer()
+
+       def action_toggle_dark(self) -> None:
+           """An action to toggle dark mode."""
+           self.theme = (
+               "textual-dark" if self.theme == "textual-light" else "textual-light"
+           )
+
+  If __name__ == "__main__":
+      app = StopwatchApp()
+      app.run()
+#+END_SRC
+
+Hit the =~D~= Key to toggle between light and dark themes.
+Hit =~Ctrl + Q~= to exit the app and return to the command prompt.
+
+*** A Closer Look at the App class
+The first line imports =~App~= class, which is the base class for all Textual apps. The second line imports two builtin widgets: =~Footer~=, which shows a bar at the bottom of the screen with bound keys, and =~Header~= which shows a title at the top of the screen.
+
+Widgets are re-usable components responsible for managing a part of the screen. We will cover how to build widgets in this tutorial.
+
+The App class is were most of the logic of Textual app is written. It is responsible for loading configuration, setting up widgets, handling keys, and more.
+
+Here's what the above app defines:
+
+- =~BINDINGS~= is a list of tuples that maps (or binds) keys to actions in your app. The first value in the tuple is the key; the second value is the name of the action; the final value is a short description. We have a single binding which maps the =~D~= key on to the "toggle_dark" action. See the [[https://textual.textualize.io/guide/input/#bindings][key bindings]] in the guid for details.
+
+  - =~compose()~= is where we construct a user interface with widgets. The =~compose()~= method may return a list of widgets, but it is generally easier to =/yield/= thme (making this method a generator). In the example code we yield an instance of each of the widget classes we imported.
+
+  - =~action_toggle_dark()~= definea an action method. Actions are methods beginning with =~action_~= followed by the name of the action. The =~BINDINGS~= list above tells Textual to run this action when the user hits the  =~D~= key. See [[https://textual.textualize.io/guide/actions/][actions]] in the guide for details.
+
+*** Designing a UI with Widgets
+Textual has a large number of [[https://textual.textualize.io/widget_gallery/][builtin widgets]]. For our app, we will need new widgets, which we can create by extending and combining the builtin widgets.
+
+**** Custom Widgets
+We need a =~Stopwatch~= widget compose of the following widgets:
+- A "Start" button
+- A "Stop" button
+- A "Reset" button
+- A time display
+
+  Let's add those to the app. Just a skeleton for now, we will add the rest of the features as we go.
+
+  #+BEGIN_SRC python
+            from textual.app import App, ComposeResult
+            from textual.containeers import HorizontalGroup, VerticalScroll
+            from textual.widgets import Button, Digits, Footer, Header
+
+            class TimeDisplay(Digits):
+                """a widget to display elapsed time."""
+
+            class Stopwatch(HorizontalGroup):
+                """A stopwatch widget."""
+                def compose(self) -> ComposeResult:
+                    """Create children wdigets of a stopwatch."""
+                    yield Button("Start", id="start", variant="success")
+                    yield Button("Stop", id="stop", variant="error")
+                    yield Button("Reset", id="reset")
+                    yield TimeDisplay("00:00:00.00")
+
+        class StopwatchApp(App):
+            """A Textual app to manage stopwatches."""
+            BINDINGS = [("d", "toggle_dark", "Toggle dark mode")]
+
+            def compose(self) -> ComposeResult:
+                """Create children widgets for the app"""
+                yield Header()
+                yield Footer()
+                yield VericalScroll(Stopwatch(), Stopwatch(), Stopwatch())
+
+            def action_toggle_dark(self) -> None:
+                """An action to toggle dark mode."""
+                self.theme = (
+                    "textual-dark" if self.theme == "textual-light" else "textual-light"
+                )
+
+    if __name__ == "__main__":
+        app = StopwatchApp()
+        app.run()
+  #+END_SRC
+
+  We've imported two new widgets in this code: =~Button~= for the buttons and =~Digits~= for the time display. Additionally, we've imported =~HorizontalGroup~= and =~VerticalScroll~= from =~textual.containers~= (as the name of the module suggests, containers are widgets which contain other widgets). We will use these container widgets to define the general layout of our interface.
+
+  The =~TimeDisplay~= is currently very simple, all it does is extend =~Digits~= without adding any new features. We will flesh this out later.
+
+  The =~Stopwatch~= widget class extends the =~HorizontalGroup~= container class, which will arrange its children int a horizontal row. The Stopwatch's =~compose()~= adds those children, which correspond to the components from the scketch above.
+
+***** Coordinating Widgets
+If you are builing custom widgets of your own, be sure to see thee guide on [[https://textual.textualize.io/guide/widgets/#coordinating-widgets][coordinating widgets]].
+
+**** The buttons
+The Button constructor takes a label to be displayed in the button. Additionally, some of the buttons set the following parameters:
+- =~id~= is an identifier we can ise to tell the buttons apart in the code and apply styles.
+- =~variant~= is a string which selects a default style. The "success" variant makes the button green, and the "error" variant makes it red.
+
+**** Composing the widgets
+The new line in =~StopwatchApp.compose()~= yields a single =~VerticalScroll~= which will scroll if the contents don't quite fit. The widgets also takes care of key bindings required for scrolling like up, down, page down, pafe up, home, end, etc.
+
+When widgets contain other widgets (like =~VeritcalScroll~=) they will typically accept their children widgets as positinal arguments. So the line =~yield VerticalScroll(Stopwatch(), Stopwatch(), Stopwatch())~= creates a =~VerticalScroll~= containing three =~Stopwatch~= widgets.
+
+**** Writing Textual CSS
+Every widget has a =~styles~= object with a number of attributes that impact how the widget will appear. Here's how you might set white text and a blue background for a widget:
+
+#+BEGIN_SRC python
+  self.styles.background = "blue"
+self.styles.color = "white"
+#+END_SRC
+
+While it's possible to set all styles for an app thi way, it is rarely necessary. Textual has support for CSS (Cascading Style Sheets). CSS files are data files loaded by your app which contain information about styles to apply to your widgets.
+
+CSS makes it easy to iterate on the desgin of your app and enables live-editing.
+
+#+BEGIN_SRC python
+  ...
+  class StopwatchApp(App):
+      CSS_PATH = "stopwatch02.tcss"
+      ...
+#+END_SRC
+
+Adding the =~CSS_PATH~= class variable tells Textual to load the following file when the app starts:
+
+#+BEGIN_SRC css
+  Stopwatch {
+      background: $boost;
+      height: 5;
+      margin: 1;
+      min-width: 50;
+      padding: 1;
+  }
+
+  TimeDisplay {
+      text-align: center;
+      color: $foreground-muted;
+      height: 3;
+  }
+
+  Button {
+      width: 16;
+  }
+
+  #start {
+      dock: left;
+  }
+
+  #stop {
+      dock: left;
+      display: none;
+  }
+
+  #resset {
+      dock: right;
+  }
+#+END_SRC
+
+***** CSS Basics
+CS files contain a mumber of =/declaration blocks/=.
+#+BEGIN_SRC css
+Stopwatch {
+      background: $boost;
+      height: 5;
+      margin: 1;
+      min-width: 50;
+      padding: 1;
+  }
+#+END_SRC
+
+The first line tells Textual that the styles should apply to the =~Stopwatch~= widget (Note: The Stopwatch widget inherits from the Horizontal Widget, so the CSS statments apply to the Horizontal Widget layout).
+
+- =~background: $boost~= sets the background colot to =~$boost~=. The =~$~= prefix picks a pre-defined color from the builtin theme. There are other ways to specify colors such as =~"blue"~= or =~rgb(20,46,210)~=.
+
+- =~height: 5~= sets the hieght of our widget to 5 lines of text.
+- =~margin: 1~= sets a margin of 1 cell aorund the =~Stopwatch~= widget to create a little space between widgets in the list.
+- =~min-width: 50~= sets the minimum width of our widget to 50 cells.
+- =~padding: 1~= sets a padding of 1 cell around the children widgets.
+
+  Here is the rest of the CSS file:
+  #+BEGIN_SRC css
+ TimeDisplay {
+      text-align: center;
+      color: $foreground-muted;
+      height: 3;
+  }
+
+  Button {
+      width: 16;
+  }
+
+  #start {
+      dock: left;
+  }
+
+  #stop {
+      dock: left;
+      display: none;
+  }
+
+  #resset {
+      dock: right;
+  }
+  #+END_SRC
+
+  The =~TimeDisplay~= block aligns the text to the center (=~text-align:~=), sets its color (=~color:~=), and sets it height (=~height:~=) to 3 lines.
+
+  The =~Button~= block sets the width (=~width:~=) of the buttond to 16 cells (character widths).
+
+  The last 3 blocks have a slightl different format. When the declaration begins with a =~#~= then the styles will be applied to widgets with a matching "id" atribute. We've set an ID on the =~Button~= widgets we yielded i the =~compose~=.
+
+  The buttons have a =~dock~= style which aligns the widget to a given edge. The start and stop buttons are dockeked to the left edge, while the reset button is docked to the right edge.
+
+  You may hace noticed that the stop button as =~display: none;~=. This tells Textual to not show the button. We do this because we don't want to display th stop button when the timer is not running. Similarly, we don't want to show the starrt button when the timer is running. We will cover how to manage such dynamic user interfaces in the next section.
