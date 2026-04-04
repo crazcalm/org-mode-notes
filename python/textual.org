@@ -230,3 +230,138 @@ The first line tells Textual that the styles should apply to the =~Stopwatch~= w
   The buttons have a =~dock~= style which aligns the widget to a given edge. The start and stop buttons are dockeked to the left edge, while the reset button is docked to the right edge.
 
   You may hace noticed that the stop button as =~display: none;~=. This tells Textual to not show the button. We do this because we don't want to display th stop button when the timer is not running. Similarly, we don't want to show the starrt button when the timer is running. We will cover how to manage such dynamic user interfaces in the next section.
+
+***** Dynamic CSS
+We want out =~Stopwatch~= widget to have two states: a default state with a Start and Reset button; and a =/started/= state with a Stop button. When a stopwatch is started it should also have a green background to indicate it is currently active.
+
+We can accomplish this with a CSS class. A widget may have any number of CSS classes, which may be added and removed to change its appearance.
+
+Here is the additional CSS classes:
+#+BEGIN_SRC css
+  .started {
+      background: $success-muted;
+      color: $text;
+  }
+
+  .started TimeDisplay {
+      color: $foreground;
+  }
+
+  .started #start {
+      display: none;
+  }
+
+  .started #stop {
+      display: block;
+  }
+
+  .started #reset {
+      visibility: hidden;
+  }
+#+END_SRC
+
+These new ruls are prefixed with =~.started~=. The =~.~= indicates that =~.started~= refers to a CSS class called "started."
+
+Some of the new styles have more than one selector separated by a space. The space indicats that the rule should match the second selector if it is a child of the first.
+
+**** Manipulating classes
+Modifying a widget's CSS classes is a convenient way to update visuals without introducting a lot of messy display related code.
+
+You can add and remove CSS classes with the =~add_class()~= and =~remove_class()~= mthods. We will use these methods to connect the started state to the Start/Stop buttons.
+
+The following code will start or stop the stopwatches in response to clicking a button:
+
+#+BEGIN_SRC python
+    from textual.app import App, ComposeResult
+    from textual.containers import HorizontalGRoup, VeritcalScroll
+    from textual.widgets import Button, Dgits, Footer, Header
+
+    class TimmeDisplay(Digits):
+        """A widget to display elapsed time."""
+
+    class Stopwatch(HorizotalGroup):
+        """A stopwatch widget."""
+
+        def on_button_pressed(self, event: Button.Pressed) -> None:
+            """Event handler called when a button is pressed."""
+            if event.button.id == "start":
+                self.add_class("started")
+            elif event.button.id == "stop":
+                self.remove_class("started")
+
+        def compose(self) -> ComposeResult:
+            """Create children widgets of a Stopwatch."""
+            yield Button("Start", id="start", variant="success")
+            yield Button("Stop", id="stop", variant="error")
+            yield Button("Reset", id="reset")
+            yield TimeDisplay("00:00:00.00")
+
+    class StopwatchApp(App):
+        """A textual app to manage stopwatches."""
+        CSS_PATH = "stopwatch04.tcss"
+        BINDINGS = [("d", "toggle_dark", "Toggle dark mode")]
+
+        def compose(self) -> ComposeResult:
+            """Create children widgets for the app."""
+            yield Header()
+            yield Footer()
+            yield VerticalScroll(Stopwatch(), Stopwatch(), Stopwatch())
+
+        def action_toggle_dark(self) -> None:
+            """An action to toggle dark mode."""
+            self.theme = (
+                "textual-dark" if self.theme == "textual-light" else "textual-light"
+            )
+
+
+  if __name__ == "__main__":
+      app  = StopwatchApp()
+      app.run()
+#+END_SRC
+
+The =~on_button_pressed~= mthod is an =/event_handler/=. Event handlers are methods called by Textual in response t an event such as a key press, mouse click, etc. Event hanflers begine with =~on_~= followed by the name of the event they will handle. Hence =~on_button_pressed~= will handle the button pressed event.
+
+See the guide on  [[https://textual.textualize.io/guide/events/#message-handlers][message handlers]] fo the details on how to write event handlers.
+
+**** Reactive attributes
+A recurring them in Textual is that you rarely ned to explicitly update a widget's visuals. It is possible: you can call =~refresh()~= to display new data. However, Textual prefers to do this automatically via =/reactive/= attributes.
+
+Reactive attributes work like any other attribute, such as those you might set in an =~__init__~= method, but allow Textual to detect when you assign them, in addition to some other superpowers.
+
+To add a reactive attribute, import reactive and create an instance in you class scop.
+
+Let's add reactivs to out stopwatch to calculated and display the elasped time.
+
+#+BEGIN_SRC python
+   ...
+   from textual.reactive import reactive
+   ...
+   class TimeDisplay(Digits):
+       """A widget to display elasped time."""
+       start_time = reactive(monotonic)
+       time = reactive(0.0)
+
+       def on_mont(self) -> None:
+           """Event handler called when widget is added to the app. """
+           self.set_interval(1/60, self.update_time)
+           
+       def update_time(self) -> None:
+           """Method to update the time to the current time."""
+           self.time = monotonic() - self.start_time
+
+       def watch_time(self, time: float) -> None:
+           """Called when the time attribute changes."""
+           minute, seconds = divmod(time, 60)
+           hours, minutes = divmod(minutes, 60)
+           self.update(f"{hours:02.0f}:{minutes:02.0f}:{seconds:05.2f}")
+
+  class Stopwatch(HorizontalGroup):
+      ...
+      def compose(self) -> ComposeResult:
+          ...
+          yield TimeDisplay()
+          ...
+
+ ...
+#+END_SRC
+
