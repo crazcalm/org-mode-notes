@@ -365,3 +365,143 @@ Let's add reactivs to out stopwatch to calculated and display the elasped time.
  ...
 #+END_SRC
 
+We have added two reactive attributes to the =~TimeDisplay~= widget: =~start_time~= will contain the time the stopwatch was started (in seconds), and =~time~= wil contain the time to be displayed in the =~Stopwatch~= widget.
+
+Both attributes will be available on =~self~= as if you had assigned them in =~__init__~=. If you write to either of these attributes widgets will update automatically.
+
+The first argument to =~reactive~= may be a default value for the attribute or a callable that returns a default value. We set the default for =~start_time~= to the =~monotonic~= function which will be called to initialize the attribute with the current time when the =~TimeDisplay~= is added to the app. The =~time~= attribute has a simple float as the default, so =~self.time~= will be initialized to =~0~=.
+
+The =~on_mount~= method is an event handler called when the widget is first added to the application. In this method we call =~set_interval()~= to create a timer which calls =~self.update_time~= sixty time a second. This =~update_time~= method calculates the time elasped since the widget started and assigns it to =~self.time~= -- which brings us to one of the Reactive's super-powers.
+
+If you implement a method that begins with =~watch_~= followed by the name of a reactive attribute, then the method will be caled when the attriute is modified. Such methods are known as =/watch/= methods.
+
+Because =~watch_time~= watches the =~time~= attribute, when we update =~self.time~= 60 times a second we also implicitly call =~watch_time~= which converts the elapssed time to a string and updates the widget with a call to =~self.update~=.
+
+**** Wiring butons
+We need to be able to start, stop and reset each stopwatch independently. We can do this by adding a few more methods to the =~TimeDisplay~= class.
+
+#+BEGIN_SRC python
+   from time import monotonic
+
+   from textual.app import App, ComposeResult
+   from textual.containers import HorizontalGroup, VerticalScroll
+   from textual.reactive import reactive
+   from textual.widgets import Button, Digits, Footer, Header
+
+   class TimeDispay(Digits):
+       """A widget to display elapsed time."""
+       start_time = reactive(monotonic)
+       time = reactive(0.0)
+       total = reactive(0.0)
+
+       def on_mount(self) -> None:
+           """Event handler called when widget is added to the app."""
+           self.update_timer = self.set_interval(1/60, self.update_time, pause=True)
+
+       def update_time(self) -> None:
+           """Method to update time to current."""
+           self.time = self.total + (monotonic() - self.start_time)
+
+       def watch_tim(self, time: float) -> None:
+           """Called when the time attribute changes."""
+           minutes, seconds = divmod(time, 60)
+           hours, minutes = divmod(minutes, 60)
+           self.update(f"{hours:02.0f}: {minutes:02.0f}: {seconds:05.2f})"
+
+        def start(self) -> None:
+            """Method to start (or resume) time updating."""
+            self.start_time = monotonic()
+            sself.update_timer.resume()
+
+       def stop(self) -> None:
+           """Method to stop the time display updating."""
+           self.update_timer.pause()
+           self.total += monotonic() = self.start_time
+           self.time = self.total
+
+       def reset(self) -> None:
+           """Method to reset the time display to zero."""
+           self.total = 0
+           self.time = 0
+
+  class Stopwatch(HorzontalGroup):
+      """A stopwatch widget"""
+      def on_button_pressed(self, event: Button.Pressed) -> None:
+          """Event handler called when a button is pressed."""
+          button_id = event.button.id
+          time_display = self.query_one(TimeDisplay)
+          if button_id == "start":
+              time_display.start()
+              self.add_class("started")
+          elif button == "stop":
+              time_display.stop()
+              self.remove_class("started")
+          elif button_id == "reset":
+              time_display.reset()
+
+      def compose(self) -> CompseResult:
+         """Create children widgets of a stopwatch"""
+         yield Button("Start", id="start", variant="success")
+         yield Button("Stop", id="stop", variant="error")
+         yield Button("Reset", id="reset")
+         yield TimeDisplay()
+
+
+  class StopwatchApp(App):
+      """A Textual appmto manage stopwatches."""
+      CSS_PATH = "stopwatch04.tcss"
+      BINDINGS = [("d", "toggle_dark", "Toggle dark mode")]
+
+     def compose(self) -> ComposeResult:
+         """Call to add widgets to the app."""
+         yield Header()
+         yield Footer()
+         yield VerticalScroll(Stopwatch(), Stopwatch, Stopwatch)
+
+    def action_toggle_dark(self) -> None:
+        """An action to toggle dark mode."""
+        self.theme = (
+            "textual-dark" if self.theme == "textual-light" else "textual-light"
+        )
+
+
+  if __name__ == "__main__":
+      app = StopwatchApp()
+      app.run()
+#+END_SRC
+
+**** Dynamic widgets
+The Stopwatch app creates widgets when it starts via the =~compose~= method. We will also need to create new widgets while the ap is running, and remove widgetswe no longer need. We can do this by calling =~mount()~= to add a widget and =~remove()~= to remove a widget.
+
+#+BEGIN_SRC python
+  ...
+  class StopwatchApp(App):
+      CSS_PATH = "stopwatch.tcss"
+      BINDINGS[
+          ("d", "toggle_dark", "Toggle dark mode"),
+          ("a", "add_stopwatch", "Add"),
+          ("r", "remove_stopwatch", "Remove"),
+      ]
+
+      def compose(self) -> ComposeResult:
+          yield Header()
+          yield Footer()
+          yield VeriticalSroll(Stopwatch(), Stopwatch(), Stopwatch, id="timers")
+
+      def action_add_stopwatch(self) -> None:
+          """An action to add a timer."""
+          new_stopwatch = Stopwatch()
+          self.query_one("#timers").mount(new_stopwatch)
+          new_stopwatch.scroll_visible()
+
+      def action_remove_stopwatch(self) -> None:
+          """Called to remove a timer."""
+          timer = self.query("Stopwatch")
+          if timers:
+              timers.last().remove()
+
+         ...
+#+END_SRC
+
+The =~action_add_stopwatch~= method creates and mounts a new stopwatch. Note the call to =~query_one~= with a CSS selector of =~"#timeers"~= which gets the timer's container via its ID. Once mounted, the new Stopwatch will appear in the terminal. That last line in =~action_add_stopwatch~= calls =~scroll_visible()~= which will scroll the container to make the new Stopwatch visible (if required).
+
